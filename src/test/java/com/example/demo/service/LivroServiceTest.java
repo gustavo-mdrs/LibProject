@@ -1,19 +1,22 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Livro;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.time.Year;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class LivroServiceTest {
 
-    private LivroService livroService = new LivroService();
+    private LivroService livroService;
+    private Livro livroValido;
 
-    @Test
-    void naoDevePermitirCadastroComTituloVazio() {
-
-        Livro livro = new Livro(
-                "", 
+    @BeforeEach
+    void setUp() {
+        livroService = new LivroService();
+        livroValido = new Livro(
+                "Livro Teste",
                 "1234567890123",
                 "Autor Teste",
                 2020,
@@ -21,35 +24,147 @@ class LivroServiceTest {
                 1,
                 100
         );
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            livroService.cadastrar(livro);
-        });
-
-        assertEquals("Título é obrigatório", exception.getMessage());
     }
 
+    // TC001
+    @Test
+    void deveCadastrarLivroComSucesso() {
+        assertDoesNotThrow(() -> livroService.cadastrar(livroValido));
+    }
+
+    // ===== CAMPOS OBRIGATÓRIOS =====
 
     @Test
-    void naoDevePermitirCadastroComIsbnVazio() {
-
-        Livro livro = new Livro(
-                "Livro Teste",
-                "",
-                "Autor Teste",
-                2020,
-                "Editora Teste",
-                1,
-                100
-        );
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            livroService.cadastrar(livro);
-        });
-
-        assertEquals("ISBN é obrigatório", exception.getMessage());
+    void naoDevePermitirTituloVazio() {
+        livroValido.setTitulo("");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
     }
 
-    
+    @Test
+    void naoDevePermitirIsbnVazio() {
+        livroValido.setIsbn("");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
 
+    @Test
+    void naoDevePermitirAutorVazio() {
+        livroValido.setAutor("");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirAnoNulo() {
+        livroValido.setAnoPublicacao(null);
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirEditoraVazia() {
+        livroValido.setEditora("");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirEdicaoNula() {
+        livroValido.setEdicao(null);
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirNumeroPaginasNulo() {
+        livroValido.setNumeroPaginas(null);
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    // ===== TAMANHO =====
+
+    @Test
+    void naoDevePermitirTituloMaiorQue255() {
+        livroValido.setTitulo("A".repeat(256));
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirAutorMenorQue3() {
+        livroValido.setAutor("AB");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirAutorMaiorQue255() {
+        livroValido.setAutor("A".repeat(256));
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirEditoraMenorQue3() {
+        livroValido.setEditora("AB");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirEditoraMaiorQue255() {
+        livroValido.setEditora("A".repeat(256));
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    // ===== ISBN =====
+
+    @Test
+    void naoDevePermitirIsbnComMenosDe13Digitos() {
+        livroValido.setIsbn("123456789012");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirIsbnComMaisDe13Digitos() {
+        livroValido.setIsbn("12345678901234");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirIsbnComLetras() {
+        livroValido.setIsbn("12345678901AB");
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    // ===== ANO =====
+
+    @Test
+    void naoDevePermitirAnoMaiorQueAtual() {
+        livroValido.setAnoPublicacao(Year.now().getValue() + 1);
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    // ===== VALORES NUMÉRICOS =====
+
+    @Test
+    void naoDevePermitirEdicaoMenorOuIgualZero() {
+        livroValido.setEdicao(0);
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirNumeroPaginasMenorOuIgualZero() {
+        livroValido.setNumeroPaginas(0);
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+    }
 }
