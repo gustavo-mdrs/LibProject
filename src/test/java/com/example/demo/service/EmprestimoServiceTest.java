@@ -6,27 +6,39 @@ import com.example.demo.model.Usuario;
 import com.example.demo.repository.EmprestimoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class EmprestimoServiceTest {
 
-    private EmprestimoService service;
+    @Mock
     private EmprestimoRepository repository;
+
+    @InjectMocks
+    private EmprestimoService service;
+
+    private Usuario usuario;
+    private Livro livro;
 
     @BeforeEach
     void setup() {
-        repository = new EmprestimoRepository();
-        service = new EmprestimoService(repository);
+        usuario = new Usuario();
+        livro = new Livro();
     }
 
     // TC044
     @Test
     void naoPermitirEmprestimoSemUsuario() {
         Emprestimo e = new Emprestimo();
-        e.setLivro(new Livro());
+        e.setLivro(livro);
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.realizarEmprestimo(e));
@@ -36,7 +48,7 @@ class EmprestimoServiceTest {
     @Test
     void naoPermitirEmprestimoSemLivro() {
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
+        e.setUsuario(usuario);
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.realizarEmprestimo(e));
@@ -44,49 +56,40 @@ class EmprestimoServiceTest {
 
     // TC046 e TC047
     @Test
-    void naoPermitirLivroJaEmprestado() {
-        Usuario u = new Usuario();
-        Livro l = new Livro();
+    void naoPermitirLivroIndisponivel() {
+        when(repository.existsLivroEmprestado(livro)).thenReturn(true);
 
-        Emprestimo primeiro = new Emprestimo();
-        primeiro.setUsuario(u);
-        primeiro.setLivro(l);
-        service.realizarEmprestimo(primeiro);
-
-        Emprestimo segundo = new Emprestimo();
-        segundo.setUsuario(new Usuario());
-        segundo.setLivro(l);
+        Emprestimo e = new Emprestimo();
+        e.setUsuario(usuario);
+        e.setLivro(livro);
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.realizarEmprestimo(segundo));
+                () -> service.realizarEmprestimo(e));
     }
 
     // TC050
     @Test
-    void impedirQuandoUltrapassarLimiteEmprestimos() {
-        Usuario u = new Usuario();
+    void impedirQuandoUltrapassarLimite() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(3L);
 
-        for (int i = 0; i < 3; i++) {
-            Emprestimo e = new Emprestimo();
-            e.setUsuario(u);
-            e.setLivro(new Livro());
-            service.realizarEmprestimo(e);
-        }
-
-        Emprestimo extra = new Emprestimo();
-        extra.setUsuario(u);
-        extra.setLivro(new Livro());
+        Emprestimo e = new Emprestimo();
+        e.setUsuario(usuario);
+        e.setLivro(livro);
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.realizarEmprestimo(extra));
+                () -> service.realizarEmprestimo(e));
     }
 
     // TC051
     @Test
     void dataEmprestimoDeveSerHoje() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(0L);
+
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
-        e.setLivro(new Livro());
+        e.setUsuario(usuario);
+        e.setLivro(livro);
 
         service.realizarEmprestimo(e);
 
@@ -96,9 +99,12 @@ class EmprestimoServiceTest {
     // TC052
     @Test
     void impedirDataEmprestimoFutura() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(0L);
+
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
-        e.setLivro(new Livro());
+        e.setUsuario(usuario);
+        e.setLivro(livro);
         e.setDataEmprestimo(LocalDate.now().plusDays(1));
 
         assertThrows(IllegalArgumentException.class,
@@ -108,11 +114,14 @@ class EmprestimoServiceTest {
     // TC053 e TC054
     @Test
     void impedirDataDevolucaoInvalida() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(0L);
+
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
-        e.setLivro(new Livro());
+        e.setUsuario(usuario);
+        e.setLivro(livro);
         e.setDataEmprestimo(LocalDate.now());
-        e.setDataPrevistaDevolucao(LocalDate.now()); // inválida
+        e.setDataPrevistaDevolucao(LocalDate.now());
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.realizarEmprestimo(e));
@@ -121,9 +130,12 @@ class EmprestimoServiceTest {
     // TC055
     @Test
     void deveCalcularDataDevolucaoAutomaticamente() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(0L);
+
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
-        e.setLivro(new Livro());
+        e.setUsuario(usuario);
+        e.setLivro(livro);
 
         service.realizarEmprestimo(e);
 
@@ -133,9 +145,12 @@ class EmprestimoServiceTest {
     // TC056
     @Test
     void statusInicialDeveSerAtivo() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(0L);
+
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
-        e.setLivro(new Livro());
+        e.setUsuario(usuario);
+        e.setLivro(livro);
 
         service.realizarEmprestimo(e);
 
@@ -146,33 +161,26 @@ class EmprestimoServiceTest {
     @Test
     void deveMudarParaAtrasado() {
         Emprestimo e = new Emprestimo();
-        e.setUsuario(new Usuario());
-        e.setLivro(new Livro());
-        e.setDataEmprestimo(LocalDate.now().minusDays(10));
+        e.setStatus("ATIVO");
         e.setDataPrevistaDevolucao(LocalDate.now().minusDays(1));
 
-        service.realizarEmprestimo(e);
         service.atualizarStatusAtrasados(e);
 
         assertEquals("ATRASADO", e.getStatus());
     }
 
-    // TC058
+    // Verifica save chamado (boa prática Mockito)
     @Test
-    void impedirEmprestimoDuplicadoMesmoLivroMesmoUsuario() {
-        Usuario u = new Usuario();
-        Livro l = new Livro();
+    void deveSalvarEmprestimoQuandoValido() {
+        when(repository.existsLivroEmprestado(any())).thenReturn(false);
+        when(repository.countEmprestimosAtivosUsuario(usuario)).thenReturn(0L);
 
-        Emprestimo e1 = new Emprestimo();
-        e1.setUsuario(u);
-        e1.setLivro(l);
-        service.realizarEmprestimo(e1);
+        Emprestimo e = new Emprestimo();
+        e.setUsuario(usuario);
+        e.setLivro(livro);
 
-        Emprestimo e2 = new Emprestimo();
-        e2.setUsuario(u);
-        e2.setLivro(l);
+        service.realizarEmprestimo(e);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.realizarEmprestimo(e2));
+        verify(repository, times(1)).save(e);
     }
 }
