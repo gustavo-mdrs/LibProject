@@ -184,9 +184,7 @@ public class UsuarioServiceTest {
 
     @Test
     @DisplayName("TC043 - Data nascimento com letras")
-    void tc043_dataLetras() {
-        // No Java, se usarmos LocalDate, o erro ocorre antes ou o campo fica null. 
-        // Validamos aqui que se a data for nula (devido a erro de conversão), o sistema bloqueia.
+    void tc043_dataLetras() {        
         Usuario u = new Usuario("Pedro", "111-222-333-12", "p@m.com", "81999887766", null);
         assertThrows(IllegalArgumentException.class, () -> service.cadastrarUsuario(u));
     }

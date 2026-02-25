@@ -1,10 +1,17 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Livro;
+import com.example.demo.repository.LivroRepository;
 
 import java.time.Year;
 
 public class LivroService {
+
+    private final LivroRepository livroRepository;
+
+    public LivroService(LivroRepository livroRepository) {
+        this.livroRepository = livroRepository;
+    }
 
     public void cadastrar(Livro livro) {
 
@@ -60,6 +67,10 @@ public class LivroService {
 
         if (!livro.getIsbn().matches("\\d{13}")) {
             throw new IllegalArgumentException("ISBN deve conter exatamente 13 dígitos numéricos");
+        }
+
+        if (livroRepository.existsByIsbn(livro.getIsbn())) {
+            throw new IllegalArgumentException("Já existe livro com esse ISBN");
         }
 
         // ===== ANO =====

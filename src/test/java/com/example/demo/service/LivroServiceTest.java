@@ -1,20 +1,39 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Livro;
+import com.example.demo.repository.LivroRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.Year;
 
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(MockitoExtension.class)
 class LivroServiceTest {
 
+    
+    @Mock
+    private LivroRepository livroRepository;
+
+    @InjectMocks
     private LivroService livroService;
+
     private Livro livroValido;
 
     @BeforeEach
     void setUp() {
-        livroService = new LivroService();
+        lenient().when(livroRepository.existsByIsbn(anyString()))
+            .thenReturn(false);
+        
         livroValido = new Livro(
                 "Livro Teste",
                 "1234567890123",
@@ -141,6 +160,19 @@ class LivroServiceTest {
         livroValido.setIsbn("12345678901AB");
         assertThrows(IllegalArgumentException.class,
                 () -> livroService.cadastrar(livroValido));
+    }
+
+    @Test
+    void naoDevePermitirIsbnDuplicado() {
+
+        when(livroRepository.existsByIsbn("1234567890123"))
+                .thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> livroService.cadastrar(livroValido));
+
+        verify(livroRepository)
+                .existsByIsbn("1234567890123");
     }
 
     // ===== ANO =====
